@@ -6,20 +6,31 @@
 
 var app = require('../app');
 var debug = require('debug')('fed-test:server');
-var http = require('http');
+var https = require('https');
+var fs = require('fs');
+
+var https_options = {
+  key:  fs.readFileSync('cert/etlog.cesnet.cz.key.pem', 'utf-8'),
+  cert: fs.readFileSync('cert/etlog.cesnet.cz.crt.pem', 'utf-8'),
+  ca: [
+    fs.readFileSync('/etc/ssl/certs/TERENA_SSL_CA_2.pem', 'utf8'),
+    fs.readFileSync('/etc/ssl/certs/TERENA_SSL_CA_3.pem', 'utf8'),
+    fs.readFileSync('/etc/ssl/certs/USERTrust_RSA_Certification_Authority.pem', 'utf8')
+  ]
+};
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '3000');
+var port = 8444;
 app.set('port', port);
 
 /**
  * Create HTTP server.
  */
 
-var server = http.createServer(app);
+var server = https.createServer(https_options, app);
 
 /**
  * Listen on provided port, on all network interfaces.
