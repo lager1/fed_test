@@ -3,6 +3,7 @@ var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
+var session = require('express-session')
 var bodyParser = require('body-parser');
 
 const passport = require('passport');
@@ -17,7 +18,9 @@ var page3 = require('./routes/page3');
 var app = express();
 
 
+app.use(session({ secret: 'appsecret', saveUninitialized: true, resave: false, cookie: { secure: true, maxAge: new Date(Date.now() + 3600000) } }));
 app.use(passport.initialize());
+app.use(passport.session());
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
