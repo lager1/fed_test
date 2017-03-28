@@ -86,6 +86,7 @@ passport.serializeUser(function(user, done) {   //  TODO
 
 passport.deserializeUser(function(user, done) { // TODO
   console.log("deserializeUser");
+  console.log(user);
   done(null, user);
 });
 
