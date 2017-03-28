@@ -10,7 +10,9 @@ const saml_strategy = require('passport-saml').Strategy;
 const fs = require('fs');
 
 var index = require('./routes/index');
-var users = require('./routes/users');
+var page1 = require('./routes/page1');
+var page2 = require('./routes/page2');
+var page3 = require('./routes/page3');
 
 var app = express();
 
@@ -30,28 +32,9 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', index);
-app.use('/users', users);
-
-// --------------------------------------------------------------------------------------
-
-app.get('/login',
-  passport.authenticate('saml'),
-  function(req, res, next) {
-  //  // If this function gets called, authentication was successful.
-    console.log("auth successful");
-    console.log(req.user);
-    res.redirect('/');
-  }
-);
-
-app.post('/login/callback',
-  passport.authenticate('saml'),
-  function(req, res) {
-    console.log("post login callback");
-    console.log(req.user);
-    res.redirect('/');
-  }
-);
+app.use('/page1', page1);
+app.use('/page2', page2);
+app.use('/page3', page3);
 
 // --------------------------------------------------------------------------------------
 // saml
@@ -75,10 +58,52 @@ var strategy = new saml_strategy({
   function(profile, done) {
     console.log("strategy");
     console.log(profile);
-    done();
+    console.log("");
+    done(null, profile);
   });
 
 passport.use(strategy);
+
+
+// --------------------------------------------------------------------------------------
+
+//http://stackoverflow.com/questions/27637609/understanding-passport-serialize-deserialize
+
+passport.serializeUser(function(user, done) {   //  TODO
+  //console.log("serializeUser");
+  //console.log(user);
+
+  var ret = {};
+
+  // urn:oid:1.3.6.1.4.1.5923.1.1.1.6 - eduPersonPrincipalName (ePPN)
+  ret.username = user["urn:oid:1.3.6.1.4.1.5923.1.1.1.6"];
+
+  done(null, ret);
+});
+
+passport.deserializeUser(function(user, done) { // TODO
+  console.log("deserializeUser");
+  done(null, user);
+});
+
+// --------------------------------------------------------------------------------------
+
+app.get('/login',
+  passport.authenticate('saml')
+);
+
+app.post('/login/callback',
+  passport.authenticate('saml'),
+  function(req, res) {
+    //console.log("post login callback");
+    //console.log(req.user);
+    //console.log("");
+    //console.log("");
+    //console.log(req.session.passport.user);
+    //console.log("");
+    res.redirect('/');
+  }
+);
 
 // --------------------------------------------------------------------------------------
 app.get('/metadata', function(req, res, next) {
