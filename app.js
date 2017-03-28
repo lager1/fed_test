@@ -59,9 +59,9 @@ var strategy = new saml_strategy({
     //privateCert: cert
   },
   function(profile, done) {
-    console.log("strategy");
-    console.log(profile);
-    console.log("");
+    //console.log("strategy");
+    //console.log(profile);
+    //console.log("");
     done(null, profile);
   });
 
