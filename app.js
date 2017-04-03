@@ -6,9 +6,10 @@ var cookieParser = require('cookie-parser');
 var session = require('express-session')
 var bodyParser = require('body-parser');
 
-const passport = require('passport');
-const saml_strategy = require('passport-saml').Strategy;
+
+const saml = require('@socialtables/saml-protocol');
 const fs = require('fs');
+const saml_model = require('./model_test');
 
 var index = require('./routes/index');
 var page1 = require('./routes/page1');
@@ -17,10 +18,10 @@ var page3 = require('./routes/page3');
 
 var app = express();
 
-
+// TODO?
 app.use(session({ secret: 'appsecret', saveUninitialized: true, resave: false, cookie: { secure: true, maxAge: new Date(Date.now() + 3600000) } }));
-app.use(passport.initialize());
-app.use(passport.session());
+//app.use(passport.initialize());
+//app.use(passport.session());
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -45,75 +46,57 @@ app.use('/page3', page3);
 var pvk = fs.readFileSync('cert/etlog.cesnet.cz.key.pem', 'utf-8');
 var cert = fs.readFileSync('cert/etlog.cesnet.cz.crt.pem', 'utf-8');
 var idpcert = fs.readFileSync('cert/idp-cert.pem', 'utf-8');
-//var idpcert = fs.readFileSync('cert/idp-cert2.pem', 'utf-8');
-
-var strategy = new saml_strategy({
-    callbackUrl: 'https://etlog-dev.cesnet.cz:8444/login/callback',
-    entryPoint: 'https://whoami-dev.cesnet.cz/idp/profile/SAML2/Redirect/SSO',
-    issuer: 'https://etlog-dev.cesnet.cz/',
-    protocol: 'https://',
-    decryptionPvk: pvk,
-    //ecryptionCert: cert,
-    identifierFormat : 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
-    cert: idpcert,
-    //privateCert: cert
-  },
-  function(profile, done) {
-    //console.log("strategy");
-    //console.log(profile);
-    //console.log("");
-    done(null, profile);
-  });
-
-passport.use(strategy);
 
 
-// --------------------------------------------------------------------------------------
-
-//http://stackoverflow.com/questions/27637609/understanding-passport-serialize-deserialize
-
-passport.serializeUser(function(user, done) {   //  TODO
-  //console.log("serializeUser");
-  //console.log(user);
-
-  var ret = {};
-
-  // urn:oid:1.3.6.1.4.1.5923.1.1.1.6 - eduPersonPrincipalName (ePPN)
-  ret.username = user["urn:oid:1.3.6.1.4.1.5923.1.1.1.6"];
-
-  done(null, ret);
-});
-
-passport.deserializeUser(function(user, done) { // TODO
-  console.log("deserializeUser");
-  console.log(user);
-  done(null, user);
-});
-
-// --------------------------------------------------------------------------------------
-
-app.get('/login',
-  passport.authenticate('saml')
-);
-
-app.post('/login/callback',
-  passport.authenticate('saml'),
-  function(req, res) {
-    //console.log("post login callback");
-    //console.log(req.user);
-    //console.log("");
-    //console.log("");
-    //console.log(req.session.passport.user);
-    //console.log("");
-    res.redirect('/');
+const spConfig = {
+  entityID: "https://etlog-dev.cesnet.cz",
+  credentials: [
+    {
+      certificate: cert,
+      privateKey: pvk
+    }
+  ],
+  endpoints: {
+    assert: "https://etlog-dev.cesnet.cz/login/callback"
   }
-);
+};
 
 // --------------------------------------------------------------------------------------
-app.get('/metadata', function(req, res, next) {
-  res.type('application/xml');
-  res.status(200).send(strategy.generateServiceProviderMetadata(cert));
+
+const idpConfig = {
+  entityID: "https://whoami-dev.cesnet.cz",
+  credentials: [
+    {
+      certificate: idpcert
+    }
+  ],
+  endpoints: {
+    login: "https://whoami-dev.cesnet.cz/idp/profile/SAML2/Redirect/SSO"
+  }
+};
+
+//const model = < your model instance >;  # we'll come back to this later
+
+const sp = new saml.ServiceProvider(spConfig, saml_model);
+const requestDescriptor = sp.produceAuthnRequest(idpConfig);
+
+
+// --------------------------------------------------------------------------------------
+
+
+app.get('/login', function(req, res, next) {
+  res.send("/login");
 });
+
+app.post('/login/callback', function(req, res, next) {
+  res.send("/login/callback");
+});
+
+// --------------------------------------------------------------------------------------
+//app.get('/metadata', function(req, res, next) {
+//  res.type('application/xml');
+//  //res.status(200).send(strategy.generateServiceProviderMetadata(cert));
+//});
 
 
 // --------------------------------------------------------------------------------------
@@ -137,3 +120,4 @@ app.use(function(err, req, res, next) {
 });
 
 module.exports = app;
+
