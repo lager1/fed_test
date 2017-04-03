@@ -111,7 +111,8 @@ app.post('/login/callback',
 
 // --------------------------------------------------------------------------------------
 app.get('/metadata', function(req, res, next) {
-  res.send(strategy.generateServiceProviderMetadata(cert));
+  res.type('application/xml');
+  res.status(200).send(strategy.generateServiceProviderMetadata(cert));
 });
 
 
